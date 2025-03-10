@@ -2,29 +2,90 @@ import streamlit as st
 import google.generativeai as genai
 import time
 
+st.set_page_config(page_title="AI Assistant for Sir Zain", page_icon="🤖", layout="centered")
 
-st.set_page_config(page_title="AI Assistant for Sir Zain")
-st.title("AI Assistant for Sir Zain")
+# 🎨 Apply Custom CSS for Chat Styling
+st.markdown("""
+    <style>
+        /* Chat Container */
+        .chat-container {
+            max-width: 80%;
+            margin: auto;
+        }
+
+        /* User Chat Bubble */
+        .user-message {
+            text-align: left;
+            color: black;
+            background: rgb(233, 230, 230);
+            border-radius: 20px;
+            padding: 10px;
+            margin-bottom: 10px;
+            width: 55%;
+            margin-left: auto;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* AI Chat Bubble */
+        .ai-message {
+            text-align: left;
+            color: white;
+            background: #007bff;
+            border-radius: 20px;
+            padding: 10px;
+            margin-bottom: 10px;
+            width: 55%;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        /* Typing Animation */
+        @keyframes typing {
+            0% { opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+
+        .typing-effect {
+            display: inline-block;
+            font-size: 16px;
+            font-weight: bold;
+            color: #007bff;
+            animation: typing 1.5s infinite;
+        }
+
+        /* Clickable Links */
+        .ai-message a {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+        
+        .ai-message a:hover {
+            color: #ffeb3b;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+
+
+st.markdown('<h1 style="text-align: center; color: white; background: linear-gradient(45deg, #007bff, #00c6ff); padding: 15px; border-radius: 8px;">🤖 AI Assistant for Sir Zain</h1>', unsafe_allow_html=True)
 
 # is ky andar user or AI ky chat save ho rahy hai
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-
-value = st.chat_input("Enter your question:") # user input
-
+value = st.chat_input("💬 Ask something about Sir Zain...")  # user input
 
 if value:
     # chat_history ky andar user ka question jaraha hai
-    st.session_state.chat_history.append({"role": "user", "message": value}) 
-
+    st.session_state.chat_history.append({"role": "user", "message": value})
 
 if value:
     try:
-
-        with st.spinner("Generating response... Please wait"): # jab tak AI ka response nhi aye 
+        with st.spinner("Generating response... Please wait"):  # jab tak AI ka response nhi aye
             API_KEY_TOKEN = st.secrets["API_KEY"]
-            genai.configure(api_key=API_KEY_TOKEN) 
+            genai.configure(api_key=API_KEY_TOKEN)
             model = genai.GenerativeModel("gemini-1.5-pro")
 
             # Custom Training Prompt
@@ -75,34 +136,41 @@ if value:
 
             response = model.generate_content(prompt)
 
-        
         # ✅ Extracting AI Response Correctly
         if response and response.candidates:
-            ai_answer = response.candidates[0].content.parts[0].text  # Ai ka response object main araha hai us ko fetch karrahy hai
-            st.session_state.chat_history.append({"role": "AI", "message": ai_answer})     # chat_history ky andar AI ka response jaraha hai
+            ai_answer = response.candidates[0].content.parts[0].text   # Ai ka response object main araha hai us ko fetch karrahy hai
+
+            # ✅ **agar AI ky response ky andar koye Link hoye gi wo is ky andar jaye gi**
+            if "https://" in ai_answer:
+                words = ai_answer.split()
+                ai_answer = " ".join(
+                    f'<a href="{word}" target="_blank">{word}</a>' if word.startswith("https://") else word
+                    for word in words
+                )
+
+            # Save AI Response in chat history
+            st.session_state.chat_history.append({"role": "AI", "message": ai_answer})
+
         else:
-            st.session_state.chat_history.append( {"role": "AI", "message": "⚠️ AI did not return a valid response."})
+            st.session_state.chat_history.append({"role": "AI", "message": "⚠️ AI did not return a valid response."})
 
     except Exception as e:
-            st.session_state.chat_history.append( {"role": "AI", "message": f"5 minute wait them try"})
+        st.session_state.chat_history.append({"role": "AI", "message": "⚠️ Please wait 5 minutes and try again."})
 
 
+# 🔹 **Display Chat History with Fix for Links or ye div nichy end ho raha hai**
+st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
-
-for chat in st.session_state.chat_history :
-    if chat["role"] == "user": # is ky anadr user ka question araha hai
-        st.markdown(
-            f"<div style='text-align: left;  color: black; background: rgb(233, 230, 230); "
-            "border-radius: 20px; padding: 10px;  margin-bottom: 20px; width: 55%; margin-left: auto;'>"
-            f"{chat['message']}</div>", unsafe_allow_html=True
-        )
-
-    else: # is ky andar AI ka response araha hai
+for chat in st.session_state.chat_history:
+    if chat["role"] == "user":  # is ky andar user ka question araha hai
+        st.markdown(f'<div class="user-message">{chat["message"]}</div>', unsafe_allow_html=True)
+    else:  # is ky andar AI ka response araha hai
         time.sleep(1)
-        st.write(f"**AI:** {chat['message']}")
+        st.markdown(f'<div class="ai-message">{chat["message"]}</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True) # end div
 
 
 
-
-
-
+# 📝 **Typing Effect Animation**
+st.markdown('<div class="typing-effect">Typing...</div>', unsafe_allow_html=True)
